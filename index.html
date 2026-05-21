@@ -1,37 +1,221 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Motorhome Feed</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f7fafc; margin: 0; padding: 20px; color: #2d3748; }
-        .container { max-width: 600px; margin: 0 auto; }
-        header { text-align: center; margin-bottom: 30px; background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; }
-        h1 { margin: 0; color: #1a202c; font-size: 20px; }
-        .meta { font-size: 13px; color: #718096; margin-top: 5px; }
-        .grid { display: grid; gap: 16px; }
-        .card { background: white; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; }
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .badge { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; }
-        .source-trademe { background-color: #ebf8ff; color: #2b6cb0; }
-        .timestamp { font-size: 12px; color: #a0aec0; }
-        .title { margin: 0 0 12px 0; font-size: 16px; color: #2d3748; font-weight: 600; }
-        .price { font-size: 22px; font-weight: 800; color: #e53e3e; margin-bottom: 16px; }
-        .btn { text-decoration: none; background: #3182ce; color: white; text-align: center; padding: 12px; border-radius: 8px; font-weight: 600; font-size: 14px; }
-        .no-listings { text-align: center; padding: 30px; color: #718096; background: white; border-radius: 12px; border: 1px solid #e2e8f0; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>🚐 Live Motorhome Monitor</h1>
-            <div class="meta">Monitoring Dealer 4-Berths Under $100k</div>
-            <div class="meta"><b>Last System Scan:</b> 21 May 2026, 09:25 PM NZST</div>
-        </header>
-        <div class="grid">
-            <div class='no-listings'>Monitoring live Trade Me feeds for 4-Berth stock... Updates update automatically.</div>
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Trade Me Motorhomes</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background: #f5f5f5;
+                margin: 40px;
+            }
+
+            h1 {
+                margin-bottom: 8px;
+            }
+
+            .meta {
+                color: #666;
+                margin-bottom: 30px;
+            }
+
+            .grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+                gap: 20px;
+            }
+
+            .card {
+                background: white;
+                border-radius: 12px;
+                padding: 20px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            }
+
+            .card h2 {
+                font-size: 18px;
+                margin-top: 0;
+            }
+
+            .price {
+                font-size: 20px;
+                font-weight: bold;
+                color: #0a7d33;
+            }
+
+            a {
+                display: inline-block;
+                margin-top: 10px;
+                text-decoration: none;
+                color: #0057cc;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Trade Me Dealer Motorhomes</h1>
+        <div class="meta">
+            Generated: 2026-05-21 21:48 UTC<br>
+            Listings found: 22
         </div>
-    </div>
-</body>
-</html>
+
+        <div class="grid">
+            
+        <div class="card">
+            <h2>Private seller</h2>
+            <p class="price">$75,000</p>
+            <p>Listed within the last 7 days • 2014 Mercedes River Rest Motorhome • Raglan, Waikato • 250,000 km • 6 berths</p>
+            <a href="https://www.trademe.co.nz/a/motors/caravans-motorhomes/motorhomes/7-7-9-metres/listing/5940978069?rsqid=c6bdb499b1bb4ac58c78a20eaa299c45-001" target="_blank">View Listing</a>
+        </div>
+        
+        <div class="card">
+            <h2>Private seller</h2>
+            <p class="price">$50,000</p>
+            <p>Listed within the last 7 days • 2010 Ford Transit • Tokoroa/Putaruru, Waikato • 173,861 km • 4 berths</p>
+            <a href="https://www.trademe.co.nz/a/motors/caravans-motorhomes/motorhomes/6-6-9-metres/listing/5937703637?rsqid=c6bdb499b1bb4ac58c78a20eaa299c45-001" target="_blank">View Listing</a>
+        </div>
+        
+        <div class="card">
+            <h2>Save $5,000</h2>
+            <p class="price">$5,000</p>
+            <p>2018 Kea Voyager T540 - Toyota 4 Berth • Smart Space. Easy Travel • Christchurch, Canterbury • 240,282 km • 4 berths</p>
+            <a href="https://www.trademe.co.nz/a/motors/caravans-motorhomes/motorhomes/6-6-9-metres/listing/5636554639?rsqid=c6bdb499b1bb4ac58c78a20eaa299c45-001" target="_blank">View Listing</a>
+        </div>
+        
+        <div class="card">
+            <h2>Special offer</h2>
+            <p class="price">$86,990</p>
+            <p>2015 Mercedes-Benz Sprinter 513 6-Berths Camper... • Now Available at Team Hutchinson All Makes! • Christchurch, Canterbury • 201,527 km • 6 berths</p>
+            <a href="https://www.trademe.co.nz/a/motors/caravans-motorhomes/motorhomes/7-7-9-metres/listing/5660170008?rsqid=c6bdb499b1bb4ac58c78a20eaa299c45-001" target="_blank">View Listing</a>
+        </div>
+        
+        <div class="card">
+            <h2>Special offer</h2>
+            <p class="price">$59,990</p>
+            <p>2018 Talvor Endeavour Toyota Hiace ZL 2.7P 4A • Compact thoughtfully designed campervan • Auckland, Auckland • 184,283 km • 4 berths</p>
+            <a href="https://www.trademe.co.nz/a/motors/caravans-motorhomes/motorhomes/5-5-9-metres/listing/5908781466?rsqid=c6bdb499b1bb4ac58c78a20eaa299c45-001" target="_blank">View Listing</a>
+        </div>
+        
+        <div class="card">
+            <h2>Private seller</h2>
+            <p class="price">$22,500</p>
+            <p>Listed within the last 7 days • 1983 Mitsubishi Canter • Blenheim, Marlborough • 378,729 km • 6 berths</p>
+            <a href="https://www.trademe.co.nz/a/motors/caravans-motorhomes/motorhomes/6-6-9-metres/listing/5942276766?rsqid=c6bdb499b1bb4ac58c78a20eaa299c45-001" target="_blank">View Listing</a>
+        </div>
+        
+        <div class="card">
+            <h2>Private seller</h2>
+            <p class="price">$85,000</p>
+            <p>Listed within the last 7 days • 2015 Kea Horizon M721 – 6 Berth – Mercedes-Benz • Upgraded Lithium/Victron – Separate Shower • Christchurch City, Canterbury • 289,400 km</p>
+            <a href="https://www.trademe.co.nz/a/motors/caravans-motorhomes/motorhomes/7-7-9-metres/listing/5937968866?rsqid=c6bdb499b1bb4ac58c78a20eaa299c45-001" target="_blank">View Listing</a>
+        </div>
+        
+        <div class="card">
+            <h2>Save $5,000</h2>
+            <p class="price">$5,000</p>
+            <p>2018 Kea Voyager T540 - Toyota 4 Berth • Smart Space. Easy Travel • Christchurch, Canterbury • 210,279 km • 4 berths</p>
+            <a href="https://www.trademe.co.nz/a/motors/caravans-motorhomes/motorhomes/6-6-9-metres/listing/5924226161?rsqid=c6bdb499b1bb4ac58c78a20eaa299c45-001" target="_blank">View Listing</a>
+        </div>
+        
+        <div class="card">
+            <h2>Private seller</h2>
+            <p class="price">$46,999</p>
+            <p>2001 Ford Transit Campervan • Christchurch City, Canterbury • 603,760 km • 5 berths • 5 - 5.9 metres</p>
+            <a href="https://www.trademe.co.nz/a/motors/caravans-motorhomes/motorhomes/5-5-9-metres/listing/5920649842?rsqid=c6bdb499b1bb4ac58c78a20eaa299c45-001" target="_blank">View Listing</a>
+        </div>
+        
+        <div class="card">
+            <h2>Private seller</h2>
+            <p class="price">$38,000</p>
+            <p>Rv Big • Waitakere, Auckland • 38,000 km • 4 berths • 9 metres and over</p>
+            <a href="https://www.trademe.co.nz/a/motors/caravans-motorhomes/motorhomes/9-metres-and-over/listing/5918664873?rsqid=c6bdb499b1bb4ac58c78a20eaa299c45-001" target="_blank">View Listing</a>
+        </div>
+        
+        <div class="card">
+            <h2>Private seller</h2>
+            <p class="price">$77,500</p>
+            <p>2013 Mercedes Sprinter, 6 berth Talvor Motorhome • Napier, Hawke's Bay • 238,000 km • 6 berths • 7 - 7.9 metres</p>
+            <a href="https://www.trademe.co.nz/a/motors/caravans-motorhomes/motorhomes/7-7-9-metres/listing/5917238900?rsqid=c6bdb499b1bb4ac58c78a20eaa299c45-001" target="_blank">View Listing</a>
+        </div>
+        
+        <div class="card">
+            <h2>Private seller</h2>
+            <p class="price">$82,000</p>
+            <p>CI. CARIOCO 694 • Caravans International Italy • Tauranga, Bay of Plenty • 52,000 km • 4 berths</p>
+            <a href="https://www.trademe.co.nz/a/motors/caravans-motorhomes/motorhomes/6-6-9-metres/listing/5939393988?rsqid=c6bdb499b1bb4ac58c78a20eaa299c45-001" target="_blank">View Listing</a>
+        </div>
+        
+        <div class="card">
+            <h2>Private seller</h2>
+            <p class="price">$69,750</p>
+            <p>Hino Motorhome – Fit for Permanent Living • Napier, Hawke's Bay • 248,707 km • 4 berths • 8 - 8.9 metres</p>
+            <a href="https://www.trademe.co.nz/a/motors/caravans-motorhomes/motorhomes/8-8-9-metres/listing/5947445343?rsqid=c6bdb499b1bb4ac58c78a20eaa299c45-001" target="_blank">View Listing</a>
+        </div>
+        
+        <div class="card">
+            <h2>Private seller</h2>
+            <p class="price">$96,000</p>
+            <p>Kea Platinum M721 6 Berth Mercedes Benz (2017) • 184,000 km - we'll pay for pre-purchase check • Franklin, Auckland • 184,000 km • 6 berths</p>
+            <a href="https://www.trademe.co.nz/a/motors/caravans-motorhomes/motorhomes/7-7-9-metres/listing/5925642346?rsqid=c6bdb499b1bb4ac58c78a20eaa299c45-001" target="_blank">View Listing</a>
+        </div>
+        
+        <div class="card">
+            <h2>Private seller</h2>
+            <p class="price">$39,990</p>
+            <p>2007 Mercedes Sprinter Campervan • Tauranga, Bay of Plenty • 305,000 km • 4 berths • 7 - 7.9 metres</p>
+            <a href="https://www.trademe.co.nz/a/motors/caravans-motorhomes/motorhomes/7-7-9-metres/listing/5829831368?rsqid=c6bdb499b1bb4ac58c78a20eaa299c45-001" target="_blank">View Listing</a>
+        </div>
+        
+        <div class="card">
+            <h2>Save $5,000</h2>
+            <p class="price">$5,000</p>
+            <p>Listed within the last 7 days • 2018 Kea Platinum Mercedes Sprinter 6 Berth • EOFY Sale,188HP, 2.5T tow rated,Dual RWD, NZ Built • Bay of Plenty • 244,930 km</p>
+            <a href="https://www.trademe.co.nz/a/motors/caravans-motorhomes/motorhomes/7-7-9-metres/listing/5936226934?rsqid=c6bdb499b1bb4ac58c78a20eaa299c45-001" target="_blank">View Listing</a>
+        </div>
+        
+        <div class="card">
+            <h2>Save $10,000</h2>
+            <p class="price">$10,000</p>
+            <p>2019 Carado T449 Rear island bed + drop down • Serviced with new cambelt • Christchurch, Canterbury • 149,629 km • 4 berths</p>
+            <a href="https://www.trademe.co.nz/a/motors/caravans-motorhomes/motorhomes/7-7-9-metres/listing/5932517701?rsqid=c6bdb499b1bb4ac58c78a20eaa299c45-001" target="_blank">View Listing</a>
+        </div>
+        
+        <div class="card">
+            <h2>Save $2,000</h2>
+            <p class="price">$2,000</p>
+            <p>2017 Talvor Euro Deluxe Mercedes-Benz 2.2L • 6 Berth Motorhome | Adventure Ready | Refurbished • Christchurch, Canterbury • 287,748 km • 6 berths</p>
+            <a href="https://www.trademe.co.nz/a/motors/caravans-motorhomes/motorhomes/7-7-9-metres/listing/5928804742?rsqid=c6bdb499b1bb4ac58c78a20eaa299c45-001" target="_blank">View Listing</a>
+        </div>
+        
+        <div class="card">
+            <h2>Save $2,000</h2>
+            <p class="price">$2,000</p>
+            <p>2013 Autotrail Tracker FB • UNDER OFFER! • Amberley, Canterbury • 86,993 km • 4 berths</p>
+            <a href="https://www.trademe.co.nz/a/motors/caravans-motorhomes/motorhomes/7-7-9-metres/listing/5874288390?rsqid=c6bdb499b1bb4ac58c78a20eaa299c45-001" target="_blank">View Listing</a>
+        </div>
+        
+        <div class="card">
+            <h2>Save $3,000</h2>
+            <p class="price">$3,000</p>
+            <p>2009 Mercedes-Benz Sprinter Very tidy well care... • Auckland, Auckland • 240,604 km • 4 berths • 7 - 7.9 metres</p>
+            <a href="https://www.trademe.co.nz/a/motors/caravans-motorhomes/motorhomes/7-7-9-metres/listing/5808451815?rsqid=c6bdb499b1bb4ac58c78a20eaa299c45-001" target="_blank">View Listing</a>
+        </div>
+        
+        <div class="card">
+            <h2>Save $5,000</h2>
+            <p class="price">$5,000</p>
+            <p>2012 Swift Escape 664 • UNDER OFFER! • Amberley, Canterbury • 87,935 km • 4 berths</p>
+            <a href="https://www.trademe.co.nz/a/motors/caravans-motorhomes/motorhomes/6-6-9-metres/listing/5849040886?rsqid=c6bdb499b1bb4ac58c78a20eaa299c45-001" target="_blank">View Listing</a>
+        </div>
+        
+        <div class="card">
+            <h2>Save $5,000</h2>
+            <p class="price">$5,000</p>
+            <p>2018 Kea Platinum Mercedes Sprinter 6 Berth • EOFY Sale,188HP, 2.5T tow rated,Dual RWD, NZ Built • Bay of Plenty • 247,000 km • 6 berths</p>
+            <a href="https://www.trademe.co.nz/a/motors/caravans-motorhomes/motorhomes/7-7-9-metres/listing/5839657637?rsqid=c6bdb499b1bb4ac58c78a20eaa299c45-001" target="_blank">View Listing</a>
+        </div>
+        
+        </div>
+    </body>
+    </html>
+    
