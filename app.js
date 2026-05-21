@@ -56,7 +56,10 @@ function card(item) {
 
             <div class="summary">${item.summary}</div>
 
-            <a href="${item.url}" target="_blank">View</a>
+            <a class="view-btn" href="${item.url}" target="_blank">
+                <span>View Listing</span>
+                <div class="glow"></div>
+            </a>
         </div>
     </div>
     `;
