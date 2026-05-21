@@ -1,16 +1,16 @@
 import os
 import json
 import re
-import xml.etree.ElementTree as ET
 import requests
+from bs4 import BeautifulSoup
 from datetime import datetime
 
 DB_FILE = "seen_listings.txt"
 HTML_FILE = "index.html"
 
-# Pulls broad dealer feeds under 100k so we don't let TradeMe's backend drop valid stock
-TRADEME_RSS = "https://www.trademe.co.nz/Browse/SearchResults.aspx?nav_perpage=100&cid=2983&user_type=dealer&price_max=100000&format=rss"
-AUTOTRADER_WEB = "https://www.autotrader.co.nz/used-cars-for-sale/motorhomes?priceTo=100000"
+# Actual web pages a human browser opens
+TRADEME_URL = "https://www.trademe.co.nz/a/motors/caravans-motorhomes/motorhomes/search?user_type=dealer&price_max=100000&berths_min=4"
+AUTOTRADER_URL = "https://www.autotrader.co.nz/used-cars-for-sale/motorhomes?priceTo=100000"
 
 def load_seen_listings():
     if os.path.exists(DB_FILE):
@@ -28,64 +28,72 @@ def check_marketplaces():
     seen_links = {item['link'] for item in seen_db}
     current_runs = []
 
-    # Emulated headers to successfully pass AutoTrader security firewalls
+    # High-grade browser headers to bypass cloud firewalls
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Encoding": "gzip, deflate, br",
         "Connection": "keep-alive"
     }
 
-    # ---- ENGINE 1: TRADE ME (LOCAL SCANNING) ----
+    # ---- PARSE ENGINE 1: TRADE ME ----
     try:
-        response = requests.get(TRADEME_RSS, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
+        response = requests.get(TRADEME_URL, headers=headers, timeout=15)
         if response.status_code == 200:
-            root = ET.fromstring(response.content)
-            for item in root.findall(".//item"):
-                title = item.find("title").text
-                link = item.find("link").text.split("?")[0]
-                
-                price = "View Details"
-                desc = item.find("description")
-                if desc is not None and "$" in desc.text:
-                    try:
-                        price = "$" + desc.text.split("$")[1].split()[0]
-                    except: pass
-                
-                # Check for 4-Berth indicators explicitly in the title text
-                title_lower = title.lower()
-                if "4 berth" in title_lower or "4-berth" in title_lower or "4berth" in title_lower:
-                    current_runs.append({"title": title, "link": link, "price": price, "source": "Trade Me"})
-    except Exception as e:
-        print(f"TradeMe Processing Error: {e}")
-
-    # ---- ENGINE 2: AUTOTRADER (DOM PARSING) ----
-    try:
-        response = requests.get(AUTOTRADER_WEB, headers=headers, timeout=15)
-        if response.status_code == 200:
-            html = response.text
-            # Regex patterns matching AutoTrader's exact production card templates
-            listings = re.findall(r'href="(/used-cars-for-sale/motorhomes/[^"]+)"[^>]*>([\s\S]*?)</a', html)
+            soup = BeautifulSoup(response.text, 'html.parser')
             
-            for relative_link, card_content in listings:
-                full_link = f"https://www.autotrader.co.nz{relative_link}"
-                
-                # Extract clean text components safely
-                title_match = re.search(r'class="[^"]*card-title[^"]*">([^<]+)', card_content)
-                price_match = re.search(r'\$(\d{1,3},\d{3})', card_content)
-                
-                if title_match:
-                    t_text = title_match.group(1).strip()
-                    p_text = f"${price_match.group(1)}" if price_match else "View Details"
-                    
-                    t_lower = t_text.lower()
-                    # Filter for 4-Berth matching layout profiles while removing explicitly labeled small units
-                    if ("4 berth" in t_lower or "4-berth" in t_lower or "4berth" in t_lower) or not any(x in t_lower for x in ["2-berth", "2 berth", "3 berth"]):
-                        current_runs.append({"title": t_text, "link": full_link, "price": p_text, "source": "AutoTrader"})
+            # Extract Trade Me's embedded application state data layer containing full page search results
+            script_tag = soup.find('script', text=re.compile('tg-initial-state'))
+            if script_tag:
+                data_match = re.search(r'window\.__INITIAL_STATE__\s*=\s*({.*?});', script_tag.string)
+                if data_match:
+                    state_json = json.loads(data_match.group(1))
+                    listings = state_json.get('search', {}).get('results', {}).get('listings', [])
+                    for l in listings:
+                        id_val = l.get('listingId')
+                        title = l.get('title', '')
+                        price = l.get('priceDisplay', 'View Details')
+                        link = f"https://www.trademe.co.nz/a/motors/caravans-motorhomes/motorhomes/listing/{id_val}"
+                        current_runs.append({"title": title, "link": link, "price": price, "source": "Trade Me"})
+            
+            # Backup: Regex extraction directly out of document strings if JSON shifts
+            if not current_runs:
+                ids = re.findall(r'"listingId":\s*(\d+)', response.text)
+                titles = re.findall(r'"title":\s*"([^"]+)"', response.text)
+                for i in range(min(len(ids), len(titles))):
+                    if not any(x in titles[i].lower() for x in ["motorhome", "caravan", "search"]):
+                        link = f"https://www.trademe.co.nz/a/motors/caravans-motorhomes/motorhomes/listing/{ids[i]}"
+                        current_runs.append({"title": titles[i], "link": link, "price": "View Details", "source": "Trade Me"})
     except Exception as e:
-        print(f"AutoTrader Processing Error: {e}")
+        print(f"TradeMe Extraction Error: {e}")
 
-    # Compile updates chronologically
+    # ---- PARSE ENGINE 2: AUTOTRADER ----
+    try:
+        response = requests.get(AUTOTRADER_URL, headers=headers, timeout=15)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            # Targets the container links for vehicles in AutoTrader's grid layout
+            cards = soup.select('a[href*="/used-cars-for-sale/motorhomes/"]')
+            
+            for card in cards:
+                href = card.get('href')
+                link = f"https://www.autotrader.co.nz{href}" if not href.startswith('http') else href
+                
+                title_el = card.select_one('.card-title, h3, h4, .title')
+                price_el = card.select_one('.price, .card-price, font')
+                
+                title = title_el.text.strip() if title_el else "Motorhome Listing"
+                price = price_el.text.strip() if price_el else "View Details"
+                
+                # Dynamic exclusion of known 2-berth keywords
+                t_lower = title.lower()
+                if not any(x in t_lower for x in ["2-berth", "2 berth", "3 berth"]):
+                    current_runs.append({"title": title, "link": link, "price": price, "source": "AutoTrader"})
+    except Exception as e:
+        print(f"AutoTrader Extraction Error: {e}")
+
+    # Assemble and filter against historical database
     new_discoveries = []
     for item in current_runs:
         if item['link'] not in seen_links:
@@ -102,7 +110,7 @@ def generate_html(listings):
     cards_html = ""
     
     if not listings:
-        cards_html = "<div class='no-listings'>Searching for active matches... Page updates every 15 minutes.</div>"
+        cards_html = "<div class='no-listings'>No active dealer 4-berth listings under $100k found. Standing by for updates...</div>"
     else:
         for item in listings:
             source_class = "source-trademe" if item['source'] == "Trade Me" else "source-autotrader"
@@ -140,8 +148,7 @@ def generate_html(listings):
         .timestamp {{ font-size: 12px; color: #a0aec0; }}
         .title {{ margin: 0 0 12px 0; font-size: 16px; color: #2d3748; line-height: 1.5; font-weight: 600; }}
         .price {{ font-size: 22px; font-weight: 800; color: #e53e3e; margin-bottom: 16px; }}
-        .btn {{ text-decoration: none; background: #3182ce; color: white; text-align: center; padding: 12px; border-radius: 8px; font-weight: 600; font-size: 14px; transition: background 0.2s; }}
-        .btn:hover {{ background: #2b6cb0; }}
+        .btn {{ text-decoration: none; background: #3182ce; color: white; text-align: center; padding: 12px; border-radius: 8px; font-weight: 600; font-size: 14px; }}
         .no-listings {{ text-align: center; padding: 30px; color: #718096; background: white; border-radius: 12px; border: 1px solid #e2e8f0; }}
     </style>
 </head>
@@ -149,7 +156,7 @@ def generate_html(listings):
     <div class="container">
         <header>
             <h1>🚐 Live Motorhome Monitor</h1>
-            <div class="meta">Trade Me & AutoTrader Tracker (Dealer 4-Berths Under $100k)</div>
+            <div class="meta">Trade Me & AutoTrader Live Scanning (Dealer 4-Berths Under $100k)</div>
             <div class="meta"><b>Last System Scan:</b> {timestamp}</div>
         </header>
         <div class="grid">
