@@ -27,6 +27,6 @@ jobs:
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git add seen_listings.txt || true
+        git add seen_listings.txt index.html || true
         git commit -m "Automated log update: Seen listings sync" || true
         git push
