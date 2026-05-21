@@ -108,3 +108,54 @@ a {
     color: #8b5cf6;
     text-decoration: none;
 }
+
+.view-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    margin-top: 12px;
+    padding: 10px 14px;
+
+    border-radius: 12px;
+
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+
+    color: #e2e8f0;
+    text-decoration: none;
+
+    backdrop-filter: blur(12px);
+
+    transition: all 0.25s ease;
+
+    overflow: hidden;
+}
+
+.view-btn:hover {
+    transform: translateY(-2px);
+    border-color: rgba(94, 234, 212, 0.5);
+    box-shadow: 0 10px 25px rgba(94, 234, 212, 0.15);
+}
+
+.view-btn span {
+    position: relative;
+    z-index: 2;
+}
+
+.view-btn .glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+        circle at center,
+        rgba(94, 234, 212, 0.25),
+        transparent 70%
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.view-btn:hover .glow {
+    opacity: 1;
+}
