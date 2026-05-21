@@ -1,13 +1,14 @@
 import os
 import json
+import xml.etree.ElementTree as ET
 import requests
 from datetime import datetime
 
 DB_FILE = "seen_listings.txt"
 HTML_FILE = "index.html"
 
-# Direct unblocked open endpoint for motorhomes
-TRADEME_API = "https://api.trademe.co.nz/v1/Search/Motors/Caravans-motorhomes/Motorhomes.json?user_type=dealer&price_max=100000&berths_min=4&rows=50"
+# Broad feed query to ensure Cloudflare doesn't block the connection
+TRADEME_RSS = "https://www.trademe.co.nz/Browse/SearchResults.aspx?nav_perpage=50&cid=2983&user_type=dealer&price_max=100000&format=rss"
 
 def load_seen_listings():
     if os.path.exists(DB_FILE):
@@ -25,51 +26,38 @@ def check_marketplaces():
     seen_links = {item['link'] for item in seen_db}
     current_runs = []
 
-    # 1. TRADE ME ENGINE
-    try:
-        response = requests.get(TRADEME_API, timeout=15)
-        if response.status_code == 200:
-            data = response.json()
-            listings = data.get("List", [])
-            for item in listings:
-                title = item.get("Title", "")
-                listing_id = item.get("ListingId", "")
-                price = item.get("PriceDisplay", "View Details")
-                link = f"https://www.trademe.co.nz/a/motors/caravans-motorhomes/motorhomes/listing/{listing_id}"
-                
-                current_runs.append({
-                    "title": title,
-                    "link": link,
-                    "price": price,
-                    "source": "Trade Me"
-                })
-    except Exception as e:
-        print(f"Trade Me API Error: {e}")
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+    }
 
-    # 2. AUTOTRADER ENGINE (FALLBACK SECURE DATA PIPELINE)
     try:
-        # Utilizing standard feed relay to collect matching assets without blocking
-        at_url = "https://www.autotrader.co.nz/used-cars-for-sale/motorhomes"
-        res = requests.get(at_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
-        if res.status_code == 200:
-            # Simple string search fallback to grab items safely
-            import re
-            links = re.findall(r'href="(/used-cars-for-sale/motorhomes/[^"]+)"', res.text)
-            titles = re.findall(r'class="[^"]*card-title[^"]*">([^<]+)', res.text)
-            for i in range(min(len(titles), len(links))):
-                full_link = f"https://www.autotrader.co.nz{links[i]}"
-                t_text = titles[i].strip()
-                if not any(x in t_text.lower() for x in ["2-berth", "2 berth", "3 berth"]):
+        response = requests.get(TRADEME_RSS, headers=headers, timeout=15)
+        if response.status_code == 200:
+            root = ET.fromstring(response.content)
+            for item in root.findall(".//item"):
+                title = item.find("title").text
+                link = item.find("link").text.split("?")[0]
+                
+                price = "View Listing"
+                desc = item.find("description")
+                if desc is not None and "$" in desc.text:
+                    try:
+                        price = "$" + desc.text.split("$")[1].split()[0]
+                    except: pass
+                
+                # Check for any variation of 4-berth inside the title text locally
+                title_lower = title.lower()
+                if any(x in title_lower for x in ["4 berth", "4-berth", "4berth", "4 bth", "voyager"]):
                     current_runs.append({
-                        "title": t_text,
-                        "link": full_link,
-                        "price": "Check Site",
-                        "source": "AutoTrader"
+                        "title": title, 
+                        "link": link, 
+                        "price": price, 
+                        "source": "Trade Me"
                     })
     except Exception as e:
-        print(f"AutoTrader Error: {e}")
+        print(f"Extraction Error: {e}")
 
-    # Update database
+    # Process seen tracking
     new_discoveries = []
     for item in current_runs:
         if item['link'] not in seen_links:
@@ -86,15 +74,14 @@ def generate_html(listings):
     cards_html = ""
     
     if not listings:
-        cards_html = "<div class='no-listings'>Waiting for listings to populate. Checking live data stream...</div>"
+        cards_html = "<div class='no-listings'>Monitoring live Trade Me feeds for 4-Berth stock... Updates update automatically.</div>"
     else:
         for item in listings:
-            source_class = "source-trademe" if item['source'] == "Trade Me" else "source-autotrader"
-            date_label = item.get('discovered_at', 'Active Listing')
+            date_label = item.get('discovered_at', 'Active Stock')
             cards_html += f"""
             <div class="card">
                 <div class="card-header">
-                    <span class="badge {source_class}">{item['source']}</span>
+                    <span class="badge source-trademe">{item['source']}</span>
                     <span class="timestamp">{date_label}</span>
                 </div>
                 <h3 class="title">{item['title']}</h3>
@@ -103,37 +90,46 @@ def generate_html(listings):
             </div>
             """
 
-    with open(HTML_FILE, "w", encoding="utf-8") as f:
-        f.write(f"""<!DOCTYPE html>
+    html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Vehicle Feed</title>
+    <title>Motorhome Feed</title>
     <style>
-        body {{ font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f7fafc; padding: 20px; }}
+        body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f7fafc; margin: 0; padding: 20px; color: #2d3748; }}
         .container {{ max-width: 600px; margin: 0 auto; }}
-        header {{ text-align: center; background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #e2e8f0; }}
-        h1 {{ margin: 0; font-size: 20px; }}
-        .card {{ background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #e2e8f0; }}
-        .card-header {{ display: flex; justify-content: space-between; margin-bottom: 12px; }}
-        .badge {{ font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; }}
-        .source-trademe {{ background: #ebf8ff; color: #2b6cb0; }}
-        .source-autotrader {{ background: #f0fff4; color: #38a169; }}
-        .price {{ font-size: 22px; font-weight: 800; color: #e53e3e; margin-bottom: 12px; }}
-        .btn {{ display: block; text-decoration: none; background: #3182ce; color: white; text-align: center; padding: 12px; border-radius: 8px; font-weight: 600; }}
+        header {{ text-align: center; margin-bottom: 30px; background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; }}
+        h1 {{ margin: 0; color: #1a202c; font-size: 20px; }}
+        .meta {{ font-size: 13px; color: #718096; margin-top: 5px; }}
+        .grid {{ display: grid; gap: 16px; }}
+        .card {{ background: white; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; }}
+        .card-header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }}
+        .badge {{ font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; }}
+        .source-trademe {{ background-color: #ebf8ff; color: #2b6cb0; }}
+        .timestamp {{ font-size: 12px; color: #a0aec0; }}
+        .title {{ margin: 0 0 12px 0; font-size: 16px; color: #2d3748; font-weight: 600; }}
+        .price {{ font-size: 22px; font-weight: 800; color: #e53e3e; margin-bottom: 16px; }}
+        .btn {{ text-decoration: none; background: #3182ce; color: white; text-align: center; padding: 12px; border-radius: 8px; font-weight: 600; font-size: 14px; }}
+        .no-listings {{ text-align: center; padding: 30px; color: #718096; background: white; border-radius: 12px; border: 1px solid #e2e8f0; }}
     </style>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>🚐 Live Motorhome Monitor</h1>
-            <p><b>Last Update:</b> {timestamp}</p>
+            <div class="meta">Monitoring Dealer 4-Berths Under $100k</div>
+            <div class="meta"><b>Last System Scan:</b> {timestamp}</div>
         </header>
-        {cards_html}
+        <div class="grid">
+            {cards_html}
+        </div>
     </div>
 </body>
-</html>""")
+</html>"""
+
+    with open(HTML_FILE, "w", encoding="utf-8") as f:
+        f.write(html_content)
 
 if __name__ == "__main__":
     generate_html(check_marketplaces())
