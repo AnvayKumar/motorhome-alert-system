@@ -1,5 +1,9 @@
 name: Run Motorhome Scraper
 
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
 on:
   schedule:
     # This runs the scraper automatically every hour
