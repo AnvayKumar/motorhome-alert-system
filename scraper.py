@@ -77,8 +77,18 @@ def extract_listings(page):
                 || lines[0]
                 || "Untitled";
 
-            const priceMatch = text.match(/\\$[\\d,]+/);
-            const price = priceMatch ? priceMatch[0] : "0";
+            const priceMatches = [...text.matchAll(/\$[\d,]+/g)]
+                .map(m => m[0]);
+
+            // filter out obvious "fake prices"
+            const filtered = priceMatches.filter(p => {
+                const num = parseInt(p.replace(/[$,]/g, ""));
+                return num > 10000; // motorhomes threshold (filters deposits/offers)
+            });
+
+            const price = filtered.length
+                ? filtered[0]
+                : (priceMatches[0] || "0");
 
             const img = container?.querySelector('img')?.src || "";
 
