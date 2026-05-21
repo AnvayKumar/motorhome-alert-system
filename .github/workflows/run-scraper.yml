@@ -31,12 +31,12 @@ jobs:
         run: |
           python scraper.py
 
-      - name: Commit updated files
+      - name: Commit only if changed
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          git add index.html listings.json seen_listings.txt debug.png
+          git add .
 
           git diff --cached --quiet || git commit -m "Update Trade Me listings"
 
