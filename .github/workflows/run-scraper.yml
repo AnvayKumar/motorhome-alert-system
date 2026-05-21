@@ -36,8 +36,8 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          git add index.html listings.json
+          git add index.html listings.json seen_listings.txt debug.png
 
-          git diff --cached --quiet || git commit -m "Update scraper output"
+          git diff --cached --quiet || git commit -m "Update Trade Me listings"
 
           git push
