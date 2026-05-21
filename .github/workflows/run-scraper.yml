@@ -1,0 +1,32 @@
+name: Run Motorhome Scraper
+
+on:
+  schedule:
+    # This runs the scraper automatically every hour
+    - cron: '0 * * * *'
+  workflow_dispatch:
+    # This gives you a manual "Run now" button in the GitHub dashboard
+
+jobs:
+  scrape-and-log:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository code
+      uses: actions/checkout@v4
+
+    - name: Set up Python environment
+      uses: actions/setup-python@v5
+      with:
+        python-python-version: '3.10'
+
+    - name: Run the scraper script
+      run: python scraper.py
+
+    - name: Automatically save tracking changes back to repo
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git add seen_listings.txt || true
+        git commit -m "Automated log update: Seen listings sync" || true
+        git push
