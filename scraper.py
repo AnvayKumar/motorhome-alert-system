@@ -1,7 +1,7 @@
 from playwright.sync_api import sync_playwright
-from datetime import datetime
 import pathlib
 import json
+import hashlib
 
 SEARCH_URL = (
     "https://www.trademe.co.nz/a/motors/"
@@ -10,7 +10,9 @@ SEARCH_URL = (
 )
 
 OUTPUT_HTML = "index.html"
+LISTINGS_JSON = "listings.json"
 SEEN_FILE = "seen_listings.txt"
+HASH_FILE = ".last_hash"
 
 
 def load_seen_urls():
@@ -144,8 +146,6 @@ def generate_cards(items):
 
 
 def build_html(listings):
-    generated = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
-
     dealers = [
         x for x in listings
         if x["seller_type"] == "Dealer"
@@ -217,10 +217,6 @@ def build_html(listings):
                 box-shadow: 0 8px 24px rgba(0,0,0,0.12);
             }}
 
-            .card-content {{
-                padding: 20px;
-            }}
-
             .thumb {{
                 width: 100%;
                 height: 240px;
@@ -280,10 +276,6 @@ def build_html(listings):
                 color: #0057cc;
             }}
 
-            a:hover {{
-                text-decoration: underline;
-            }}
-
             @media (max-width: 700px) {{
                 body {{
                     padding: 16px;
@@ -306,8 +298,7 @@ def build_html(listings):
             <h1>🚐 Trade Me Motorhomes</h1>
 
             <div class="meta">
-                Generated: {generated}<br>
-                Total Listings: {len(listings)}
+                Listings: {len(listings)}
             </div>
 
             <h2 class="section-title">
@@ -330,6 +321,22 @@ def build_html(listings):
     </body>
     </html>
     """
+
+
+def generate_hash(data):
+    normalized = json.dumps(data, sort_keys=True)
+    return hashlib.md5(normalized.encode()).hexdigest()
+
+
+def load_previous_hash():
+    try:
+        return pathlib.Path(HASH_FILE).read_text().strip()
+    except FileNotFoundError:
+        return None
+
+
+def save_hash(hash_value):
+    pathlib.Path(HASH_FILE).write_text(hash_value)
 
 
 def main():
@@ -372,37 +379,44 @@ def main():
             page.mouse.wheel(0, 4000)
             page.wait_for_timeout(1500)
 
-        page.screenshot(path="debug.png", full_page=True)
-
         listings = extract_listings(page)
-
-        for item in listings:
-            item["is_new"] = item["url"] not in seen_urls
-
-        all_urls = set(seen_urls)
-
-        for item in listings:
-            all_urls.add(item["url"])
-
-        save_seen_urls(all_urls)
-
-        print(f"Found {len(listings)} listings")
-
-        html = build_html(listings)
-
-        pathlib.Path(OUTPUT_HTML).write_text(
-            html,
-            encoding="utf-8"
-        )
-
-        pathlib.Path("listings.json").write_text(
-            json.dumps(listings, indent=2),
-            encoding="utf-8"
-        )
 
         browser.close()
 
-        print(f"Saved {OUTPUT_HTML}")
+    for item in listings:
+        item["is_new"] = item["url"] not in seen_urls
+
+    current_hash = generate_hash(listings)
+    previous_hash = load_previous_hash()
+
+    if current_hash == previous_hash:
+        print("No listing changes detected.")
+        return
+
+    print("Changes detected. Updating files...")
+
+    all_urls = set(seen_urls)
+
+    for item in listings:
+        all_urls.add(item["url"])
+
+    save_seen_urls(all_urls)
+
+    html = build_html(listings)
+
+    pathlib.Path(OUTPUT_HTML).write_text(
+        html,
+        encoding="utf-8"
+    )
+
+    pathlib.Path(LISTINGS_JSON).write_text(
+        json.dumps(listings, indent=2),
+        encoding="utf-8"
+    )
+
+    save_hash(current_hash)
+
+    print("Files updated.")
 
 
 if __name__ == "__main__":
