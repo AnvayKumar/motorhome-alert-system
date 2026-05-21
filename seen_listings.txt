@@ -1,0 +1,2 @@
+{"title": "2016 Fiat Ducato Auto-Trail Tracker (4-Berth)", "link": "https://www.trademe.co.nz/a/motors/caravans-motorhomes", "price": "$95,500", "source": "Trade Me", "discovered_at": "21 May 2026, 10:54 AM"}
+{"title": "2015 Mercedes Sprinter KEA Breeze (4-Berth)", "link": "https://www.autotrader.co.nz/used-cars-for-sale/motorhomes", "price": "$89,990", "source": "AutoTrader", "discovered_at": "21 May 2026, 10:54 AM"}
