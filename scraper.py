@@ -1,135 +1,226 @@
-import os
-import json
-import xml.etree.ElementTree as ET
-import requests
+from playwright.sync_api import sync_playwright
 from datetime import datetime
+import pathlib
+import json
 
-DB_FILE = "seen_listings.txt"
-HTML_FILE = "index.html"
+SEARCH_URL = (
+    "https://www.trademe.co.nz/a/motors/"
+    "caravans-motorhomes/motorhomes/search"
+    "?user_type=dealer&price_max=100000&berths_min=4"
+)
 
-# Broad feed query to ensure Cloudflare doesn't block the connection
-TRADEME_RSS = "https://www.trademe.co.nz/Browse/SearchResults.aspx?nav_perpage=50&cid=2983&user_type=dealer&price_max=100000&format=rss"
+OUTPUT_HTML = "index.html"
 
-def load_seen_listings():
-    if os.path.exists(DB_FILE):
-        with open(DB_FILE, "r", encoding="utf-8") as f:
-            return [json.loads(line.strip()) for line in f if line.strip()]
-    return []
 
-def save_seen_listings(all_items):
-    with open(DB_FILE, "w", encoding="utf-8") as f:
-        for item in all_items:
-            f.write(json.dumps(item) + "\n")
+def extract_listings(page):
+    """
+    Extract listings from the live rendered DOM.
+    Uses multiple selector strategies because Trade Me
+    changes class names frequently.
+    """
 
-def check_marketplaces():
-    seen_db = load_seen_listings()
-    seen_links = {item['link'] for item in seen_db}
-    current_runs = []
+    page.wait_for_timeout(5000)
 
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+    listings = page.evaluate("""
+    () => {
+        const results = [];
+
+        const anchors = Array.from(document.querySelectorAll('a[href*="/listing/"]'));
+
+        const seen = new Set();
+
+        anchors.forEach(a => {
+            const href = a.href;
+
+            if (!href || seen.has(href)) return;
+
+            seen.add(href);
+
+            const container =
+                a.closest('[class*="card"]') ||
+                a.closest('li') ||
+                a.closest('div');
+
+            const text = container ? container.innerText : a.innerText;
+
+            if (!text || text.length < 20) return;
+
+            const lines = text
+                .split('\\n')
+                .map(l => l.trim())
+                .filter(Boolean);
+
+            const title = lines[0] || "Untitled";
+
+            const priceMatch = text.match(/\\$[\\d,]+/);
+            const price = priceMatch ? priceMatch[0] : "Price unavailable";
+
+            results.push({
+                title,
+                price,
+                url: href,
+                summary: lines.slice(1, 6).join(' • ')
+            });
+        });
+
+        return results;
     }
+    """)
 
-    try:
-        response = requests.get(TRADEME_RSS, headers=headers, timeout=15)
-        if response.status_code == 200:
-            root = ET.fromstring(response.content)
-            for item in root.findall(".//item"):
-                title = item.find("title").text
-                link = item.find("link").text.split("?")[0]
-                
-                price = "View Listing"
-                desc = item.find("description")
-                if desc is not None and "$" in desc.text:
-                    try:
-                        price = "$" + desc.text.split("$")[1].split()[0]
-                    except: pass
-                
-                # Check for any variation of 4-berth inside the title text locally
-                title_lower = title.lower()
-                if any(x in title_lower for x in ["4 berth", "4-berth", "4berth", "4 bth", "voyager"]):
-                    current_runs.append({
-                        "title": title, 
-                        "link": link, 
-                        "price": price, 
-                        "source": "Trade Me"
-                    })
-    except Exception as e:
-        print(f"Extraction Error: {e}")
+    # Remove obvious duplicates
+    deduped = []
+    seen_urls = set()
 
-    # Process seen tracking
-    new_discoveries = []
-    for item in current_runs:
-        if item['link'] not in seen_links:
-            item['discovered_at'] = datetime.now().strftime("%d %b %Y, %I:%M %p")
-            new_discoveries.append(item)
-            seen_links.add(item['link'])
+    for item in listings:
+        if item["url"] not in seen_urls:
+            seen_urls.add(item["url"])
+            deduped.append(item)
 
-    updated_db = new_discoveries + seen_db
-    save_seen_listings(updated_db)
-    return updated_db
+    return deduped
 
-def generate_html(listings):
-    timestamp = datetime.now().strftime("%d %b %Y, %I:%M %p NZST")
-    cards_html = ""
-    
-    if not listings:
-        cards_html = "<div class='no-listings'>Monitoring live Trade Me feeds for 4-Berth stock... Updates update automatically.</div>"
-    else:
-        for item in listings:
-            date_label = item.get('discovered_at', 'Active Stock')
-            cards_html += f"""
-            <div class="card">
-                <div class="card-header">
-                    <span class="badge source-trademe">{item['source']}</span>
-                    <span class="timestamp">{date_label}</span>
-                </div>
-                <h3 class="title">{item['title']}</h3>
-                <div class="price">{item['price']}</div>
-                <a href="{item['link']}" target="_blank" class="btn">View Live Vehicle ↗</a>
-            </div>
-            """
 
-    html_content = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Motorhome Feed</title>
-    <style>
-        body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f7fafc; margin: 0; padding: 20px; color: #2d3748; }}
-        .container {{ max-width: 600px; margin: 0 auto; }}
-        header {{ text-align: center; margin-bottom: 30px; background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; }}
-        h1 {{ margin: 0; color: #1a202c; font-size: 20px; }}
-        .meta {{ font-size: 13px; color: #718096; margin-top: 5px; }}
-        .grid {{ display: grid; gap: 16px; }}
-        .card {{ background: white; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; }}
-        .card-header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }}
-        .badge {{ font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; }}
-        .source-trademe {{ background-color: #ebf8ff; color: #2b6cb0; }}
-        .timestamp {{ font-size: 12px; color: #a0aec0; }}
-        .title {{ margin: 0 0 12px 0; font-size: 16px; color: #2d3748; font-weight: 600; }}
-        .price {{ font-size: 22px; font-weight: 800; color: #e53e3e; margin-bottom: 16px; }}
-        .btn {{ text-decoration: none; background: #3182ce; color: white; text-align: center; padding: 12px; border-radius: 8px; font-weight: 600; font-size: 14px; }}
-        .no-listings {{ text-align: center; padding: 30px; color: #718096; background: white; border-radius: 12px; border: 1px solid #e2e8f0; }}
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>🚐 Live Motorhome Monitor</h1>
-            <div class="meta">Monitoring Dealer 4-Berths Under $100k</div>
-            <div class="meta"><b>Last System Scan:</b> {timestamp}</div>
-        </header>
-        <div class="grid">
-            {cards_html}
+def build_html(listings):
+    generated = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+
+    cards = ""
+
+    for item in listings:
+        cards += f"""
+        <div class="card">
+            <h2>{item['title']}</h2>
+            <p class="price">{item['price']}</p>
+            <p>{item['summary']}</p>
+            <a href="{item['url']}" target="_blank">View Listing</a>
         </div>
-    </div>
-</body>
-</html>"""
+        """
 
-    with open(HTML_FILE, "w", encoding="utf-8") as f:
-        f.write(html_content)
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Trade Me Motorhomes</title>
+        <style>
+            body {{
+                font-family: Arial, sans-serif;
+                background: #f5f5f5;
+                margin: 40px;
+            }}
+
+            h1 {{
+                margin-bottom: 8px;
+            }}
+
+            .meta {{
+                color: #666;
+                margin-bottom: 30px;
+            }}
+
+            .grid {{
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+                gap: 20px;
+            }}
+
+            .card {{
+                background: white;
+                border-radius: 12px;
+                padding: 20px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            }}
+
+            .card h2 {{
+                font-size: 18px;
+                margin-top: 0;
+            }}
+
+            .price {{
+                font-size: 20px;
+                font-weight: bold;
+                color: #0a7d33;
+            }}
+
+            a {{
+                display: inline-block;
+                margin-top: 10px;
+                text-decoration: none;
+                color: #0057cc;
+            }}
+        </style>
+    </head>
+    <body>
+        <h1>Trade Me Dealer Motorhomes</h1>
+        <div class="meta">
+            Generated: {generated}<br>
+            Listings found: {len(listings)}
+        </div>
+
+        <div class="grid">
+            {cards}
+        </div>
+    </body>
+    </html>
+    """
+
+
+def main():
+    with sync_playwright() as p:
+        browser = p.chromium.launch(
+            headless=True,
+            args=[
+                "--disable-blink-features=AutomationControlled",
+                "--no-sandbox"
+            ]
+        )
+
+        context = browser.new_context(
+            user_agent=(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/124.0.0.0 Safari/537.36"
+            ),
+            viewport={"width": 1440, "height": 2200},
+            locale="en-NZ"
+        )
+
+        page = context.new_page()
+
+        print("Opening Trade Me...")
+
+        page.goto(
+            SEARCH_URL,
+            wait_until="domcontentloaded",
+            timeout=120000
+        )
+
+        # Give Cloudflare + JS time
+        page.wait_for_timeout(8000)
+
+        # Scroll to trigger lazy loading
+        for _ in range(5):
+            page.mouse.wheel(0, 4000)
+            page.wait_for_timeout(1500)
+
+        listings = extract_listings(page)
+
+        print(f"Found {len(listings)} listings")
+
+        html = build_html(listings)
+
+        pathlib.Path(OUTPUT_HTML).write_text(
+            html,
+            encoding="utf-8"
+        )
+
+        pathlib.Path("listings.json").write_text(
+            json.dumps(listings, indent=2),
+            encoding="utf-8"
+        )
+
+        browser.close()
+
+        print(f"Saved {OUTPUT_HTML}")
+
 
 if __name__ == "__main__":
-    generate_html(check_marketplaces())
+    main()
