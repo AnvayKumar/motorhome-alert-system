@@ -31,19 +31,55 @@ input {
     color: white;
 }
 
+.tabs,
+.sort {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
 .tabs button,
 .sort button {
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.08);
-    color: white;
-    padding: 6px 10px;
-    border-radius: 10px;
+    position: relative;
+
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+
+    color: #e2e8f0;
+
+    padding: 8px 14px;
+    border-radius: 999px;
+
     cursor: pointer;
+
+    backdrop-filter: blur(10px);
+
+    transition: all 0.25s ease;
+
+    font-size: 13px;
+    letter-spacing: 0.3px;
+}
+
+.tabs button:hover,
+.sort button:hover {
+    transform: translateY(-1px);
+    border-color: rgba(94, 234, 212, 0.4);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
 }
 
 .tabs button.active {
-    background: #5eead4;
-    color: black;
+    background: linear-gradient(
+        135deg,
+        rgba(94, 234, 212, 0.9),
+        rgba(139, 92, 246, 0.8)
+    );
+
+    color: #0b1020;
+    font-weight: 600;
+
+    border: none;
+
+    box-shadow: 0 8px 25px rgba(94, 234, 212, 0.25);
 }
 
 .stats {
